@@ -146,7 +146,7 @@ public class OFSwitchBaseTest {
                 .build();
 
         IOFConnectionBackend conn = EasyMock.createNiceMock(IOFConnectionBackend.class);
-        capturedMessage = EasyMock.newCapture();
+        capturedMessage = new Capture<Iterable<OFMessage>>();
         expect(conn.write(EasyMock.capture(capturedMessage))).andReturn(Collections.<OFMessage>emptyList()).atLeastOnce();
         expect(conn.getOFFactory()).andReturn(factory).anyTimes();
         expect(conn.getAuxId()).andReturn(OFAuxId.MAIN).anyTimes();

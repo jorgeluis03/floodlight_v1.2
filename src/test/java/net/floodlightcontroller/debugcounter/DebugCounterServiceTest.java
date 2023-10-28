@@ -1,13 +1,22 @@
 package net.floodlightcontroller.debugcounter;
 
-import com.google.common.collect.Lists;
-import net.floodlightcontroller.debugcounter.IDebugCounterService.MetaData;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 import org.junit.Before;
 import org.junit.Test;
+import net.floodlightcontroller.debugcounter.IDebugCounterService.MetaData;
 
-import java.util.*;
-
-import static org.junit.Assert.*;
+import com.google.common.collect.Lists;
 
 public class DebugCounterServiceTest {
     private DebugCounterServiceImpl counterService;

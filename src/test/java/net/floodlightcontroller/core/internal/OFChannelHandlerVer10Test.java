@@ -52,7 +52,6 @@ import org.projectfloodlight.openflow.protocol.OFFactories;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFFeaturesReply;
 import org.projectfloodlight.openflow.protocol.OFFlowRemoved;
-import org.projectfloodlight.openflow.protocol.OFFlowRemovedReason;
 import org.projectfloodlight.openflow.protocol.OFFlowStatsReply;
 import org.projectfloodlight.openflow.protocol.OFGetConfigReply;
 import org.projectfloodlight.openflow.protocol.OFMessage;
@@ -120,16 +119,16 @@ public class OFChannelHandlerVer10Test {
         switchManager = createMock(IOFSwitchManager.class);
         connectionListener = createMock(IOFConnectionListener.class);
         newConnectionListener = createMock(INewOFConnectionListener.class);
-        newConnection = EasyMock.newCapture();
-        newFeaturesReply = EasyMock.newCapture();
+        newConnection = new Capture<IOFConnectionBackend>();
+        newFeaturesReply = new Capture<OFFeaturesReply>();
         eventLoop = new TestEventLoop();
 
         ctx = createMock(ChannelHandlerContext.class);
         channel = createMock(Channel.class);
         timer = new HashedWheelTimer();
-        exceptionEventCapture = EasyMock.newCapture(CaptureType.ALL);
+        exceptionEventCapture = new Capture<Throwable>(CaptureType.ALL);
         pipeline = createMock(ChannelPipeline.class);
-        writeCapture = EasyMock.newCapture(CaptureType.ALL);
+        writeCapture = new Capture<List<OFMessage>>(CaptureType.ALL);
         seenXids = null;
 
         // TODO: should mock IDebugCounterService and make sure
@@ -398,7 +397,7 @@ public class OFChannelHandlerVer10Test {
 
 
         // Send packet in. expect dispatch
-        OFFlowRemoved flowRemoved = factory.buildFlowRemoved().setReason(OFFlowRemovedReason.DELETE)
+        OFFlowRemoved flowRemoved = factory.buildFlowRemoved()
                 .build();
 
         resetAndExpectConnectionListener(flowRemoved);

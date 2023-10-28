@@ -1,13 +1,15 @@
 package net.floodlightcontroller.mactracker;
 
-import net.floodlightcontroller.core.*;
+import net.floodlightcontroller.core.FloodlightContext;
+import net.floodlightcontroller.core.IOFMessageListener;
+import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFType;
-
+import net.floodlightcontroller.core.IFloodlightProviderService;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.Set;
@@ -24,7 +26,6 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
     protected Set<Long> macAddresses;
     protected static Logger logger;
 
-    //Metodos
     @Override
     public String getName() {
         return MACTracker.class.getSimpleName();
@@ -42,7 +43,6 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-        //definir el comportamiento que queremos para el PACKET_IN
         Ethernet eth =
                 IFloodlightProviderService.bcStore.get(cntx,
                         IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
@@ -77,7 +77,6 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public void init(FloodlightModuleContext context) throws FloodlightModuleException {
-        //carga dependencias e inicializa estructuras de datos
         floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
         macAddresses = new ConcurrentSkipListSet<Long>();
         logger = LoggerFactory.getLogger(MACTracker.class);
@@ -85,9 +84,6 @@ public class MACTracker implements IOFMessageListener, IFloodlightModule {
 
     @Override
     public void startUp(FloodlightModuleContext context) throws FloodlightModuleException {
-        //implementar el oyente basico
-        //queremos recibir mesajes PACKET_IN
-        floodlightProvider.addOFMessageListener(OFType.PACKET_IN,this);
+        floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
     }
-
 }

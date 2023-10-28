@@ -1,10 +1,6 @@
 package org.sdnplatform.sync.internal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -15,6 +11,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+
+import net.floodlightcontroller.core.module.FloodlightModuleContext;
+import net.floodlightcontroller.debugcounter.IDebugCounterService;
+import net.floodlightcontroller.debugcounter.MockDebugCounterService;
+import net.floodlightcontroller.debugevent.IDebugEventService;
+import net.floodlightcontroller.debugevent.MockDebugEventService;
+import net.floodlightcontroller.threadpool.IThreadPoolService;
+import net.floodlightcontroller.threadpool.ThreadPool;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -28,9 +35,12 @@ import org.sdnplatform.sync.IStoreClient;
 import org.sdnplatform.sync.IStoreListener;
 import org.sdnplatform.sync.IStoreListener.UpdateType;
 import org.sdnplatform.sync.ISyncService;
-import org.sdnplatform.sync.ISyncService.Scope;
 import org.sdnplatform.sync.Versioned;
+import org.sdnplatform.sync.ISyncService.Scope;
 import org.sdnplatform.sync.error.ObsoleteVersionException;
+import org.sdnplatform.sync.internal.AbstractSyncManager;
+import org.sdnplatform.sync.internal.SyncManager;
+import org.sdnplatform.sync.internal.SyncTorture;
 import org.sdnplatform.sync.internal.config.Node;
 import org.sdnplatform.sync.internal.config.PropertyCCProvider;
 import org.sdnplatform.sync.internal.store.Key;
@@ -39,15 +49,6 @@ import org.sdnplatform.sync.internal.util.CryptoUtil;
 import org.sdnplatform.sync.internal.version.VectorClock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import net.floodlightcontroller.core.module.FloodlightModuleContext;
-import net.floodlightcontroller.debugcounter.IDebugCounterService;
-import net.floodlightcontroller.debugcounter.MockDebugCounterService;
-import net.floodlightcontroller.threadpool.IThreadPoolService;
-import net.floodlightcontroller.threadpool.ThreadPool;
 
 
 public class SyncManagerTest {
@@ -73,10 +74,11 @@ public class SyncManagerTest {
             throws Exception {        
         fmc.addService(IThreadPoolService.class, tp);
         fmc.addService(IDebugCounterService.class, new MockDebugCounterService());
+        fmc.addService(IDebugEventService.class, new MockDebugEventService());
         fmc.addConfigParam(syncManager, "configProviders", 
                            PropertyCCProvider.class.getName());
         fmc.addConfigParam(syncManager, "nodes", nodeString);
-        fmc.addConfigParam(syncManager, "thisNodeId", ""+thisNode.getNodeId());
+        fmc.addConfigParam(syncManager, "thisNode", ""+thisNode.getNodeId());
         fmc.addConfigParam(syncManager, "persistenceEnabled", "false");
         fmc.addConfigParam(syncManager, "authScheme", "CHALLENGE_RESPONSE");
         fmc.addConfigParam(syncManager, "keyStorePath", 
@@ -105,7 +107,7 @@ public class SyncManagerTest {
         syncManagers = new SyncManager[4];
         moduleContexts = new FloodlightModuleContext[4];
 
-        nodes = new ArrayList<>();
+        nodes = new ArrayList<Node>();
         nodes.add(new Node("localhost", 40101, (short)1, (short)1));
         nodes.add(new Node("localhost", 40102, (short)2, (short)2));
         nodes.add(new Node("localhost", 40103, (short)3, (short)1));
@@ -172,7 +174,7 @@ public class SyncManagerTest {
         IStoreClient<Key, TBean> testClient =
                 sync.getStoreClient("local", Key.class, TBean.class);
         
-        HashMap<Key, TBean> testMap = new HashMap<>();
+        HashMap<Key, TBean> testMap = new HashMap<Key, TBean>();
         for (int i = 0; i < 100; i++) {
             Key k = new Key("com.bigswitch.bigsync.internal", "test" + i);
             TBean tb = new TBean("value", i);
@@ -261,7 +263,7 @@ public class SyncManagerTest {
         waitForFullMesh(2000);
 
         ArrayList<IStoreClient<String, String>> clients =
-                new ArrayList<>(syncManagers.length);
+                new ArrayList<IStoreClient<String, String>>(syncManagers.length);
         // write one value to each node's local interface
         for (int i = 0; i < syncManagers.length; i++) {
             IStoreClient<String, String> client =
@@ -284,7 +286,7 @@ public class SyncManagerTest {
         waitForFullMesh(2000);
 
         ArrayList<IStoreClient<String, String>> clients =
-                new ArrayList<>(syncManagers.length);
+                new ArrayList<IStoreClient<String, String>>(syncManagers.length);
         // write one value to each node's local interface
         for (int i = 0; i < syncManagers.length; i++) {
             IStoreClient<String, String> client =
@@ -324,7 +326,7 @@ public class SyncManagerTest {
             public List<Versioned<List<String>>>
                     resolveConflicts(List<Versioned<List<String>>> items) {
                 VectorClock vc = null;
-                List<String> strings = new ArrayList<>();
+                List<String> strings = new ArrayList<String>();
                 for (Versioned<List<String>> item : items) {
                     if (vc == null) 
                         vc = (VectorClock)item.getVersion();
@@ -333,8 +335,8 @@ public class SyncManagerTest {
                     
                     strings.addAll(item.getValue());
                 }
-                Versioned<List<String>> v =
-                        new Versioned<>(strings, vc);
+                Versioned<List<String>> v = 
+                        new Versioned<List<String>>(strings, vc);
                 return Collections.singletonList(v);
             }
         };
@@ -355,7 +357,7 @@ public class SyncManagerTest {
         // two non-obsolete lists each containing a single element.
         // The inconsistency resolver above will resolve these by merging
         // the lists
-        List<String> comp = new ArrayList<>();
+        List<String> comp = new ArrayList<String>();
         v.setValue(Collections.singletonList("newvalue0"));
         comp.add("newvalue0");
         client0.put("key", v);
@@ -367,7 +369,7 @@ public class SyncManagerTest {
 
         // add one more value to the array.  Now there will be exactly one
         // non-obsolete value
-        List<String> newlist = new ArrayList<>(v.getValue());
+        List<String> newlist = new ArrayList<String>(v.getValue());
         assertEquals(2, newlist.size());
         newlist.add("finalvalue");
         v.setValue(newlist);
@@ -378,7 +380,6 @@ public class SyncManagerTest {
       
     }
 
-    @Ignore("fails in OSS Floodlight; since Sync isn't a focus, disabling for now.")
     @Test
     public void testReconnect() throws Exception {
         IStoreClient<String, String> client0 =
@@ -466,7 +467,7 @@ public class SyncManagerTest {
     }
     
     protected class TestListener implements IStoreListener<String> {
-        HashSet<Update> notified = new HashSet<>();
+        HashSet<Update> notified = new HashSet<Update>();
         
         @Override
         public void keysModified(Iterator<String> keys, 
@@ -508,10 +509,10 @@ public class SyncManagerTest {
         client0.put("test0", "value");
         client2.put("test2", "value");
 
-        HashSet<Update> c0 = new HashSet<>();
+        HashSet<Update> c0 = new HashSet<Update>();
         c0.add(new Update("test0", UpdateType.LOCAL));
         c0.add(new Update("test2", UpdateType.REMOTE));
-        HashSet<Update> c2 = new HashSet<>();
+        HashSet<Update> c2 = new HashSet<Update>();
         c2.add(new Update("test0", UpdateType.REMOTE));
         c2.add(new Update("test2", UpdateType.LOCAL));
         
@@ -715,7 +716,7 @@ public class SyncManagerTest {
         tp = new ThreadPool();
         tp.init(null);
         tp.startUp(null);
-        nodes = new ArrayList<>();
+        nodes = new ArrayList<Node>();
         nodes.add(new Node("localhost", 40101, (short)1, (short)1));
         nodeString = mapper.writeValueAsString(nodes);
         SyncManager sm = new SyncManager();

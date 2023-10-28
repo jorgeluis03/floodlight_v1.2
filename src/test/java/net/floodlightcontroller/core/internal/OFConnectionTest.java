@@ -164,7 +164,7 @@ public class OFConnectionTest {
 
     private Capture<List<OFMessage>> prepareChannelForWriteList() {
         EasyMock.expect(channel.isActive()).andReturn(Boolean.TRUE).anyTimes();
-        Capture<List<OFMessage>> cMsgList = EasyMock.newCapture();
+        Capture<List<OFMessage>> cMsgList = new Capture<>();
         expect(channel.writeAndFlush(capture(cMsgList))).andReturn(null).once();
         replay(channel);
         return cMsgList;

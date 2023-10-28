@@ -45,13 +45,15 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.test.MockThreadPoolService;
 import net.floodlightcontroller.debugcounter.IDebugCounterService;
 import net.floodlightcontroller.debugcounter.MockDebugCounterService;
+import net.floodlightcontroller.debugevent.IDebugEventService;
+import net.floodlightcontroller.debugevent.MockDebugEventService;
 import net.floodlightcontroller.devicemanager.IDeviceService;
 import net.floodlightcontroller.devicemanager.IEntityClassifierService;
 import net.floodlightcontroller.devicemanager.internal.DefaultEntityClassifier;
 import net.floodlightcontroller.devicemanager.test.MockDeviceManager;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.restserver.RestApiServer;
-import net.floodlightcontroller.staticentry.StaticEntryPusher;
+import net.floodlightcontroller.staticflowentry.StaticFlowEntryPusher;
 import net.floodlightcontroller.storage.IResultSet;
 import net.floodlightcontroller.storage.IStorageSourceService;
 import net.floodlightcontroller.storage.memory.MemoryStorageSource;
@@ -76,6 +78,7 @@ public class ACLTest extends FloodlightTestCase {
 	protected FloodlightContext cntx;
 	protected IOFSwitch sw;
 	
+	private MockDebugEventService debugEventService; // dependency for device manager
 	private DefaultEntityClassifier entityClassifier; // dependency for device manager
 	private MockThreadPoolService tps; // dependency for device manager
 	private ITopologyService topology; // dependency for device manager
@@ -98,6 +101,7 @@ public class ACLTest extends FloodlightTestCase {
 		mockFloodlightProvider = getMockFloodlightProvider();
 		mockSwitchManager = getMockSwitchService();
 
+		debugEventService = new MockDebugEventService();
 		entityClassifier = new DefaultEntityClassifier();
 		tps = new MockThreadPoolService();
 		deviceManager = new MockDeviceManager();
@@ -124,6 +128,7 @@ public class ACLTest extends FloodlightTestCase {
 		fmc.addService(IOFSwitchService.class, mockSwitchManager);
 		fmc.addService(IDebugCounterService.class, debugCounterService);
 		fmc.addService(IStorageSourceService.class, storageService);
+		fmc.addService(IDebugEventService.class, debugEventService);
 		fmc.addService(IEntityClassifierService.class, entityClassifier);
 		fmc.addService(IThreadPoolService.class, tps);
 		fmc.addService(IDeviceService.class, deviceManager);
@@ -151,9 +156,9 @@ public class ACLTest extends FloodlightTestCase {
 		acl.startUp(fmc);
 		verify(topology);
 
-		storageService.createTable(StaticEntryPusher.TABLE_NAME, null);
-		storageService.setTablePrimaryKeyName(StaticEntryPusher.TABLE_NAME,
-				StaticEntryPusher.Columns.COLUMN_NAME);
+		storageService.createTable(StaticFlowEntryPusher.TABLE_NAME, null);
+		storageService.setTablePrimaryKeyName(StaticFlowEntryPusher.TABLE_NAME,
+				StaticFlowEntryPusher.COLUMN_NAME);
 
 	}
 
@@ -199,7 +204,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 1);
 
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -214,7 +219,7 @@ public class ACLTest extends FloodlightTestCase {
 		}
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -259,7 +264,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 2);
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -289,7 +294,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 3);
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_3_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_3_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -343,7 +348,7 @@ public class ACLTest extends FloodlightTestCase {
 				VlanVid.ZERO, IPv4Address.of("10.0.0.1"), IPv6Address.NONE, DatapathId.of(1), OFPort.of(1));
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -362,7 +367,7 @@ public class ACLTest extends FloodlightTestCase {
 				VlanVid.ZERO, IPv4Address.of("10.0.0.2"), IPv6Address.NONE, DatapathId.of(1), OFPort.of(2));
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		int count = 0;
 		while(it.hasNext()){
@@ -389,7 +394,7 @@ public class ACLTest extends FloodlightTestCase {
 				VlanVid.ZERO, IPv4Address.of("10.0.0.3"), IPv6Address.NONE, DatapathId.of(2), OFPort.of(1));
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -408,7 +413,7 @@ public class ACLTest extends FloodlightTestCase {
 	public void testDeviceIPV4AddrChanged() {
 		
 		reset(topology);
-		expect(topology.getClusterId(DatapathId.of(1L))).andReturn(DatapathId.of(1L)).anyTimes();
+		expect(topology.getOpenflowDomainId(DatapathId.of(1L))).andReturn(DatapathId.of(1L)).anyTimes();
 		expect(topology.isAttachmentPointPort(DatapathId.of(1L), OFPort.of(1))).andReturn(true).anyTimes();
 		expect(topology.isAttachmentPointPort(DatapathId.of(2L), OFPort.of(1))).andReturn(true).anyTimes();
 		replay(topology);
@@ -441,7 +446,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 1);
 
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		assertEquals(it.hasNext(), false);
 		
@@ -450,7 +455,7 @@ public class ACLTest extends FloodlightTestCase {
 				VlanVid.ZERO, IPv4Address.of("10.0.0.1"), IPv6Address.NONE, DatapathId.of(1), OFPort.of(1));
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -506,7 +511,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 1);
 
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -521,7 +526,7 @@ public class ACLTest extends FloodlightTestCase {
 		}
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -540,12 +545,12 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(),0);
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		assertEquals(it.hasNext(), false);
 
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		assertEquals(it.hasNext(), false);
 		
@@ -592,7 +597,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 1);
 
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -607,7 +612,7 @@ public class ACLTest extends FloodlightTestCase {
 		}
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -634,7 +639,7 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(), 2);
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		while(it.hasNext()){
 			row = it.next().getRow();
@@ -653,17 +658,17 @@ public class ACLTest extends FloodlightTestCase {
 		assertEquals(acl.getRules().size(),0);
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:01");
 		it = resultSet.iterator();
 		assertEquals(it.hasNext(), false);
 
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_1_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		assertEquals(it.hasNext(), false);
 		
 		resultSet = storageService.getRow(
-				StaticEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
+				StaticFlowEntryPusher.TABLE_NAME, "ACLRule_2_00:00:00:00:00:00:00:02");
 		it = resultSet.iterator();
 		assertEquals(it.hasNext(), false);
 		

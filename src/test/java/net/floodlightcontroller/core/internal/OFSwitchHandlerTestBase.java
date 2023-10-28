@@ -56,7 +56,6 @@ import org.projectfloodlight.openflow.protocol.OFDescStatsReply;
 import org.projectfloodlight.openflow.protocol.OFErrorMsg;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFFeaturesReply;
-import org.projectfloodlight.openflow.protocol.OFFlowRemovedReason;
 import org.projectfloodlight.openflow.protocol.OFGetConfigReply;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
@@ -456,7 +455,7 @@ public abstract class OFSwitchHandlerTestBase {
 		// need to build/set this match object
 
 		Match match = factory.buildMatch().build();
-		OFMessage m = factory.buildFlowRemoved().setReason(OFFlowRemovedReason.DELETE).setMatch(match).build();
+		OFMessage m = factory.buildFlowRemoved().setMatch(match).build();
 		resetToStrict(sw);
 		sw.processDriverHandshakeMessage(m);
 		expectLastCall().once();
@@ -486,7 +485,7 @@ public abstract class OFSwitchHandlerTestBase {
 	 * @param role The role to send
 	 * @throws IOException
 	 */
-	protected long setupSwitchSendRoleRequestAndVerify(Boolean supportsNxRole,
+	private long setupSwitchSendRoleRequestAndVerify(Boolean supportsNxRole,
 			OFControllerRole role) throws IOException {
 		assertTrue("This internal test helper method most not be called " +
 				"with supportsNxRole==false. Test setup broken",
@@ -551,6 +550,11 @@ public abstract class OFSwitchHandlerTestBase {
 		replay(sw, switchManager);
 		
 		switchHandler.sendRoleRequest(role);
+		
+		/* Now, trigger transition to master */
+		OFBarrierReply br = getFactory().buildBarrierReply()
+				.build();
+		switchHandler.processOFMessage(br);
 
 		verify(sw, switchManager);
 	}
@@ -1026,16 +1030,6 @@ public abstract class OFSwitchHandlerTestBase {
 		expectLastCall().once();
 		replay(switchManager);
 		switchHandler.processOFMessage(pi);
-		verify(switchManager);
-
-		// Sent barrier reply
-		OFBarrierReply barrierReply = factory.buildBarrierReply().build();
-		reset(switchManager);
-		switchManager.handleMessage(sw, barrierReply, null);
-		expectLastCall().once();
-		replay(switchManager);
-		switchHandler.processOFMessage(barrierReply);
-		verify(switchManager);
 
 		// TODO: many more to go
 	}

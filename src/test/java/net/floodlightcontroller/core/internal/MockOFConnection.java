@@ -218,7 +218,8 @@ public class MockOFConnection implements IOFConnectionBackend {
 
 	@Override
 	public U64 getLatency() {
-		return U64.ZERO;
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

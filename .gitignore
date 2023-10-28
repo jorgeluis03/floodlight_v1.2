@@ -15,4 +15,3 @@ findbugs-results
 *.idea/*
 *.iml
 .metadata/
-/bin/

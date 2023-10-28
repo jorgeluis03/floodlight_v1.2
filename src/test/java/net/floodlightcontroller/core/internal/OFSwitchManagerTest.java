@@ -55,6 +55,8 @@ import net.floodlightcontroller.core.SwitchDescription;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.debugcounter.IDebugCounterService;
 import net.floodlightcontroller.debugcounter.MockDebugCounterService;
+import net.floodlightcontroller.debugevent.DebugEventService;
+import net.floodlightcontroller.debugevent.IDebugEventService;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.restserver.RestApiServer;
 import net.floodlightcontroller.storage.IStorageSourceService;
@@ -117,6 +119,9 @@ public class OFSwitchManagerTest{
         MockDebugCounterService debugCounterService = new MockDebugCounterService();
         fmc.addService(IDebugCounterService.class, debugCounterService);
 
+        DebugEventService debugEventService = new DebugEventService();
+        fmc.addService(IDebugEventService.class, debugEventService);
+
         switchManager = new OFSwitchManager();
         fmc.addService(IOFSwitchService.class, switchManager);
 
@@ -135,6 +140,7 @@ public class OFSwitchManagerTest{
         switchManager.init(fmc);
         debugCounterService.init(fmc);
         memstorage.init(fmc);
+        debugEventService.init(fmc);
         restApi.init(fmc);
         cm.init(fmc);
 
@@ -142,6 +148,7 @@ public class OFSwitchManagerTest{
         switchManager.startUpBase(fmc);
         debugCounterService.startUp(fmc);
         memstorage.startUp(fmc);
+        debugEventService.startUp(fmc);
         threadPool.startUp(fmc);
         restApi.startUp(fmc);
         cm.startUp(fmc);

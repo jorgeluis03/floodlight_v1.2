@@ -18,11 +18,11 @@ import java.util.NoSuchElementException;
 import javax.sql.ConnectionPoolDataSource;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.derby.jdbc.EmbeddedConnectionPoolDataSource;
+import org.apache.derby.jdbc.EmbeddedConnectionPoolDataSource40;
 import org.sdnplatform.sync.IClosableIterator;
 import org.sdnplatform.sync.IVersion;
-import org.sdnplatform.sync.IVersion.Occurred;
 import org.sdnplatform.sync.Versioned;
+import org.sdnplatform.sync.IVersion.Occurred;
 import org.sdnplatform.sync.error.ObsoleteVersionException;
 import org.sdnplatform.sync.error.PersistException;
 import org.sdnplatform.sync.error.SyncException;
@@ -47,26 +47,26 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
     protected static final Logger logger =
             LoggerFactory.getLogger(JavaDBStorageEngine.class.getName());
     
-    private static final String CREATE_DATA_TABLE =
+    private static String CREATE_DATA_TABLE = 
             " (datakey varchar(4096) primary key," +
             "datavalue blob)";
-    private static final String SELECT_ALL =
+    private static String SELECT_ALL =
             "select * from <tbl>";
-    private static final String SELECT_KEY =
+    private static String SELECT_KEY =
             "select * from <tbl> where datakey = ?";
-    private static final String INSERT_KEY =
+    private static String INSERT_KEY =
             "insert into <tbl> values (?, ?)";
-    private static final String UPDATE_KEY =
+    private static String UPDATE_KEY =
             "update <tbl> set datavalue = ? where datakey = ?";
-    private static final String DELETE_KEY =
+    private static String DELETE_KEY =
             "delete from <tbl> where datakey = ?";
-    private static final String TRUNCATE =
+    private static String TRUNCATE =
             "delete from <tbl>";
     
-    private final String name;
-    private final String dbTableName;
+    private String name;
+    private String dbTableName;
     
-    private final ConnectionPoolDataSource dataSource;
+    private ConnectionPoolDataSource dataSource;
 
     /**
      * Interval in milliseconds before tombstones will be cleared.
@@ -146,7 +146,7 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
             } catch (Exception e2) {
                 logger.error("Failed to clean up after error", e2);
             }
-            return new EmptyClosableIterator<>();
+            return new EmptyClosableIterator<Entry<ByteArray,List<Versioned<byte[]>>>>();
         }
     }
 
@@ -177,8 +177,8 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
                     vindex = 2;
                 }
 
-                List<Versioned<byte[]>> itemsToRemove =
-                        new ArrayList<>(values.size());
+                List<Versioned<byte[]>> itemsToRemove = 
+                        new ArrayList<Versioned<byte[]>>(values.size());
                 for(Versioned<byte[]> versioned: values) {
                     Occurred occurred = value.getVersion().compare(versioned.getVersion());
                     if(occurred == Occurred.BEFORE) {
@@ -197,12 +197,10 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
                 update.execute();
                 dbConnection.commit();
             } catch (SyncException e) {
-            	if(dbConnection != null)
-            		dbConnection.rollback();
+                dbConnection.rollback();
                 throw e;
             } catch (Exception e) {
-            	if(dbConnection != null)
-            		dbConnection.rollback();
+                dbConnection.rollback();
                 throw new PersistException("Could not retrieve key from database",
                                            e);
             } finally {
@@ -312,8 +310,8 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
     public static ConnectionPoolDataSource getDataSource(String dbPath, 
                                                          boolean memory) {
 
-        EmbeddedConnectionPoolDataSource ds =
-                new EmbeddedConnectionPoolDataSource();
+        EmbeddedConnectionPoolDataSource40 ds = 
+                new EmbeddedConnectionPoolDataSource40();
         if (memory) {
             ds.setDatabaseName("memory:SyncDB");                
         } else {
@@ -419,7 +417,7 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
         if (rs.next()) {
             return getVersionedList(rs);
         } else {
-            return new ArrayList<>(0);
+            return new ArrayList<Versioned<byte[]>>(0);
         }
     }
 
@@ -492,7 +490,8 @@ public class JavaDBStorageEngine implements IStorageEngine<ByteArray, byte[]> {
                     ByteArray key = getStringAsKey(rs.getString("datakey"));
                     List<Versioned<byte[]>> vlist = getVersionedList(rs);
                     hasNextSet = false;
-                    return new Pair<>(key, vlist);
+                    return new Pair<ByteArray, 
+                                    List<Versioned<byte[]>>>(key, vlist);
                 } catch (Exception e) {
                     throw new SyncRuntimeException("Error in DB Iterator", 
                                                    new PersistException(e));
