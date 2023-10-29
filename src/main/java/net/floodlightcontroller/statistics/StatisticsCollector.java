@@ -43,6 +43,8 @@ import net.floodlightcontroller.topology.NodePortTuple;
 
 public class StatisticsCollector implements IFloodlightModule, IStatisticsService {
 	private static final Logger log = LoggerFactory.getLogger(StatisticsCollector.class);
+	private static int PortTxThreshold = 0;
+	private static int PortRxThreshold = 0;
 
 	private static IOFSwitchService switchService;
 	private static IThreadPoolService threadPoolService;
@@ -81,6 +83,8 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 	 * @author Ryan Izard, ryan.izard@bigswitch.com, rizard@g.clemson.edu
 	 *
 	 */
+
+
 	private class PortStatsCollector implements Runnable {
 
 		@Override
@@ -103,7 +107,6 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 								return;
 							}
 
-							/* Get counted bytes over the elapsed period. Check for counter overflow. */
 							U64 rxBytesCounted;
 							U64 txBytesCounted;
 							if (spb.getPriorByteValueRx().compareTo(pse.getRxBytes()) > 0) { /* overflow */
@@ -121,13 +124,14 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 								txBytesCounted = pse.getTxBytes().subtract(spb.getPriorByteValueTx());
 							}
 							long timeDifSec = (System.currentTimeMillis() - spb.getUpdateTime()) / MILLIS_PER_SEC;
-							portStats.put(npt, SwitchPortBandwidth.of(npt.getNodeId(), npt.getPortId(), 
-									U64.ofRaw((rxBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec), 
-									U64.ofRaw((txBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec), 
+							portStats.put(npt, SwitchPortBandwidth.of(npt.getNodeId(), npt.getPortId(),
+									U64.ofRaw((rxBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec),
+									U64.ofRaw((txBytesCounted.getValue() * BITS_PER_BYTE) / timeDifSec),
 									pse.getRxBytes(), pse.getTxBytes())
-									);
-							
-						} else { /* initialize */
+							);
+
+
+						} else {
 							tentativePortStats.put(npt, SwitchPortBandwidth.of(npt.getNodeId(), npt.getPortId(), U64.ZERO, U64.ZERO, pse.getRxBytes(), pse.getTxBytes()));
 						}
 					}
@@ -135,6 +139,7 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 			}
 		}
 	}
+
 
 	/**
 	 * Single thread for collecting switch statistics and
@@ -198,6 +203,7 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 		return l;
 	}
 
+
 	@Override
 	public void init(FloodlightModuleContext context)
 			throws FloodlightModuleException {
@@ -223,6 +229,24 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 			}
 		}
 		log.info("Port statistics collection interval set to {}s", portStatsInterval);
+
+		if (config.containsKey("PortTxThreshold")) {
+			try {
+				PortTxThreshold = Integer.parseInt(config.get("PortTxThreshold").trim());
+			} catch (Exception e) {
+				log.error("Could not parse 'PortTxThreshold'. Using default of {}", PortTxThreshold);
+			}
+		}
+
+		if (config.containsKey("PortRxThreshold")) {
+			try {
+				PortRxThreshold = Integer.parseInt(config.get("PortRxThreshold").trim());
+			} catch (Exception e) {
+				log.error("Could not parse 'PortRxThreshold'. Using default of {}", PortRxThreshold);
+			}
+		}
+
+
 	}
 
 	@Override
@@ -464,4 +488,6 @@ public class StatisticsCollector implements IFloodlightModule, IStatisticsServic
 		}
 		return values;
 	}
+
+
 }
